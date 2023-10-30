@@ -1,4 +1,4 @@
-SRCS	=	get_next_line.c
+SRCS	=	get_next_line.c get_next_line_utils_bonus.c ft_split.c ft_atoi.c
 
 OBJS	=	$(SRCS:%.c=%.o)
 
