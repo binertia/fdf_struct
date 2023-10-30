@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "get_next_line.h"
+
 static size_t	num_genr(char const *s, char c, int indc, int line)
 {
 	size_t	count;

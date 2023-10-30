@@ -8,8 +8,8 @@
 # include "get_next_line.h"
 # include "mlx.h"
 
-char	**ft_split(char const *s, char c);
-char	*ft_atoi(char const *s);
 char	*get_next_line(int fd);
+char	**ft_split(char const *s, char c);
+int		ft_atoi(char const *s);
 
 #endif

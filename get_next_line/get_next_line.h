@@ -24,10 +24,11 @@
 
 char	*get_next_line(int fd);
 
+char	**ft_split(char const *s, char c);
+int		ft_atoi(char const *s);
+
 int		is_newline(int byte_read, char *str);
 char	*ft_strjoin(char const *s1, char const *s2);
 void	*ft_calloc(size_t count, size_t size);
 size_t	ft_strlen(const char *str);
-
-char	**ft_split(char const *s, char c);
 #endif

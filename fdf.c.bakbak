@@ -113,4 +113,3 @@ int main(int ac, char *av[])
 	mlx_hook(vars.win, 2, 0, win_close, &vars);
 	mlx_loop(vars.mlx); 
 }
-
