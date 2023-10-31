@@ -189,11 +189,75 @@ typedef	struct	s_data
 {
 	int	row;
 	int	col;
+	int	start_x;
+	int	start_y;
+	int	end_x;
+	int	end_y;
 }				t_data;
-void	draw_from_prev_point(t_img **img,int dent,int prev_dent, t_data curr)
-{}
-void	draw_from_prev_row(t_img **img, int **current_set,int **previous_set ,int current_col)
-{}
+
+void	calc_pos(t_data *curr, t_img *img, int prev_dent, int dent)
+{
+	double diff_x;
+	double diff_y;
+
+	diff_x = img->box_size * sqrt(3);
+	diff_y = (double)img->box_size / 2;
+	(*curr).end_x = img->init_x + ((*curr).row * diff_x) - (*curr).col * diff_x;
+	(*curr).start_x = img->init_x + (((*curr).row + 1) * diff_x) - (*curr).col * diff_x;
+	(*curr).end_y = img->init_y + ((*curr).row + (*curr).col + dent) * diff_y;
+	(*curr).start_y = img->init_y + ((*curr).row + (*curr).col + prev_dent - 1) * diff_y;
+}
+
+#define FIXED_SCALE 16
+
+typedef	struct	s_calc
+{
+	int	dif_x;
+	int	dif_y;
+	int	steps;
+	int	x_inc;
+	int	y_inc;
+}				t_calc;
+
+void	draw_point_to_point(t_img **img,int dent,int prev_dent, t_data curr)
+{
+	int		i;
+	t_calc	c;
+	int		x;
+	int		y;
+
+	calc_pos(&curr,*img,prev_dent, dent);
+	c.dif_x = (curr.end_x - curr.start_x) << FIXED_SCALE;
+	c.dif_y = (curr.end_y - curr.start_y) << FIXED_SCALE;
+    if (abs(c.dif_x) > abs(c.dif_y))
+        c.steps = abs(c.dif_x >> FIXED_SCALE);
+    else
+        c.steps = abs(c.dif_y >> FIXED_SCALE);
+    c.x_inc = c.dif_x / c.steps;
+    c.y_inc = c.dif_y / c.steps;
+    x = curr.start_x << FIXED_SCALE;
+    y = curr.start_y << FIXED_SCALE;
+    my_mlx_pixel_put((*img)->img,  x >> FIXED_SCALE, y >> FIXED_SCALE, 0xFF0000); // Convert back to integer
+	i = 0;
+	while(i < c.steps)
+	{
+        x += c.x_inc;
+        y += c.y_inc;
+        my_mlx_pixel_put((*img)->img, x >> FIXED_SCALE, y >> FIXED_SCALE, 0xFF0000); // Convert back to integer
+		i++;
+    }
+}
+
+void	draw_from_prev_row(t_img **img, int **curr_set,int **prev_set ,int current_col)
+{
+	int	i = 0;
+	while (prev_set[i])
+	{
+		draw_point_to_point(img, curr_set[i][0], prev_set[i][0], (t_data){i, current_col});
+		i++;
+	}
+}
+
 void	draw_map_to_img(t_node *head,t_img *img)
 {
 	int	i;
@@ -211,7 +275,7 @@ void	draw_map_to_img(t_node *head,t_img *img)
 			if (!i)
 				prev = head->num_arr[i][0];
 			else
-				draw_from_prev_point(&img, head->num_arr[i][0], prev, (t_data){j, i});
+				draw_point_to_point(&img, head->num_arr[i][0], prev, (t_data){j, i});
 			i++;
 		}
 		if (!previous_set)
@@ -251,11 +315,13 @@ int	main(int ac, char *av[])
 	calc_init_draw(&img);	
 	// === drawing to img.img
 	draw_map_to_img(map, &img);
-
 	// === put drawing to win
+	mlx_put_image_to_window(var.mlx, var.win, img.img, 0, 0);
 	
+	// === set hook :TODO:
+	//mlx_hook(var.win, 2, 0, win_close, &vars);
 	// === set loop;
-	
+	mlx_loop(var.mlx); 
 	// usaged
 	// teest :HACK:
 	printf("\n______\n");
