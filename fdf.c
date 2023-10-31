@@ -7,6 +7,8 @@ typedef struct s_img
 {
 	void	*img;
 	char	*addr;
+
+	int		box_size;
 }	t_img;
 
 // first part == input
@@ -101,10 +103,21 @@ int	ft_make_map(char **arr, t_node **node)
 		j++;
 	}
 	ft_new_list_add_back(num_arr, node);
+
+	//:HACK:free logic
+	i = 0;
+	while (arr[i])
+	{
+		free(arr[i]);
+		i++;
+	}
+	free(arr);
+	//
+	
 	return (j - 1);
 }
 
-int	get_input(char *s, t_node **head)
+int	get_input(char *s, t_node **head, t_img *img)
 {
 	int		fd;
 	int		checker;
@@ -143,7 +156,9 @@ int	get_input(char *s, t_node **head)
 
 
 
-//
+// win : 1600 - 1000
+// half : 800 - 500
+// usaged : width  while box_size < 600 
 int	main(int ac, char *av[])
 {
 	t_img img;
@@ -158,10 +173,10 @@ int	main(int ac, char *av[])
 	int fd = open(av[1], O_RDONLY);
 	char *s;
 	int	 i = 0;
-	if (!get_input(av[1], &map))
+	if (!get_input(av[1], &map, &img))
 		return (2);
 
-	// teest
+	// teest :HACK:
 	printf("\n______\n");
 	t_node *temp = map;
 	while (map && map->num_arr)
@@ -176,19 +191,20 @@ int	main(int ac, char *av[])
 		printf("\n3333333333");
 	}
 
-	//free
+	//free :HACK:
 	while (temp)
 	{
 		t_node *free_time = temp;
 		temp = temp->next;
 		int i = 0;
-		while(temp->num_arr[i])
+		while(free_time->num_arr[i])
 		{
-			free(temp->num_arr[i]);
+			free(free_time->num_arr[i]);
 			i++;
 		}
-		free(temp->num_arr);
+		free(free_time->num_arr);
 		free(free_time);
+		free_time = NULL;
 	}
 	//
 
