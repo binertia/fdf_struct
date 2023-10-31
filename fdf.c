@@ -64,7 +64,7 @@ void	*ft_new_list(int **content)
 void	ft_new_list_add_back(int **content, t_node **node)
 {
 	t_node	*temp;
-	if (!*node)
+	if (*node == NULL)
 	{
 		*node = ft_new_list(content);
 		return ;
@@ -83,7 +83,6 @@ int	ft_make_map(char **arr, t_node **node)
 	int	**num_arr;
 
 	printf("ft_make_map");
-	*node = NULL;
 	i = 0;
 	j = 0;
 	while (arr[i])
@@ -105,13 +104,12 @@ int	ft_make_map(char **arr, t_node **node)
 	return (j - 1);
 }
 
-int	get_input(char *s)
+int	get_input(char *s, t_node **head)
 {
 	int		fd;
 	int		checker;
 	int		num;
 	char	*temp;
-	t_node	*head;
 
 	temp = s;
 	checker = 0;
@@ -131,7 +129,7 @@ int	get_input(char *s)
 			break;
 		if (!check_valid_input(temp))
 			return (0);
-		num = ft_make_map(ft_split(temp, ' '), &head);
+		num = ft_make_map(ft_split(temp, ' '), head);
 		if (checker == 0)
 			checker = num;
 		if (num != checker)
@@ -142,13 +140,17 @@ int	get_input(char *s)
 	}
 	return (1);
 }
+
+
+
 //
 int	main(int ac, char *av[])
 {
 	t_img img;
 	t_var var;
-	t_node map;
+	t_node *map;
 
+	map = NULL;
 	if (ac != 2)
 		return (0);
 	//if (!get_input(av[1]))
@@ -156,8 +158,42 @@ int	main(int ac, char *av[])
 	int fd = open(av[1], O_RDONLY);
 	char *s;
 	int	 i = 0;
-	if (!get_input(av[1]))
+	if (!get_input(av[1], &map))
 		return (2);
+
+	// teest
+	printf("\n______\n");
+	t_node *temp = map;
+	while (map && map->num_arr)
+	{
+		i = 0;
+		while(map->num_arr[i])
+		{
+			printf("\n%d", map->num_arr[i][0]);
+			i++;
+		}
+		map = map -> next;
+		printf("\n3333333333");
+	}
+
+	//free
+	while (temp)
+	{
+		t_node *free_time = temp;
+		temp = temp->next;
+		int i = 0;
+		while(temp->num_arr[i])
+		{
+			free(temp->num_arr[i]);
+			i++;
+		}
+		free(temp->num_arr);
+		free(free_time);
+	}
+	//
+
+	// test
+
 	// while (1)
 	// {
 	// 	s = get_next_line(fd);
