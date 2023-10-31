@@ -94,20 +94,16 @@ int	ft_make_map(char **arr, t_node **node)
 	int	max;
 	int	**num_arr;
 
-	printf("ft_make_map\n");
+	printf("ft_make_map");
 	i = 0;
 	j = 0;
 	while (arr[i])
 		i++;
-	i--;
-	num_arr = (int **)malloc(sizeof(int *) * (i));
-	while (i >= j)
+	num_arr = (int **)malloc(sizeof(int *) * i);
+	while (i != j)
 	{
-		if (arr[i][0] == 0)
-		{
-			printf("hello bith\n");
-			return (0);
-		}
+		if (!arr[j][0])
+			return (0); //TODO: need to handle free malloc if error input
 		num_arr[j] = (int *)malloc(sizeof(int));
 		num_arr[j][0] = ft_atoi(arr[j]);
 		printf("==%i==\n", num_arr[j][0]);
@@ -156,10 +152,7 @@ int	get_input(char *s, t_node **head, t_img *img, int fd)
 		if (checker == 0)
 			checker = num;
 		if (num != checker)
-		{
-			printf("error ja");
 			return (0); // need to fre?? :TODO:
-		}
 		free(temp);
 		count++;
 	}
@@ -380,19 +373,19 @@ int	main(int ac, char *av[])
 	img.addr = mlx_get_data_addr(img.img, &img.bits_per_pixel, &img.line_length,
 								 &img.endian);
 	// debugg :BUG:
-//	draw_c(&img);
+	draw_c(&img);
 	
 	// === calculate init x and init y;
 	//calc_init_draw(&img);	
 	// === drawing to img.img
 	//	draw_map_to_img(map, &img);
 	// === put drawing to win
-//	mlx_put_image_to_window(var.mlx, var.win, img.img, 0, 0);
+	mlx_put_image_to_window(var.mlx, var.win, img.img, 0, 0);
 	
 	// === set hook :TODO:
 	//mlx_hook(var.win, 2, 0, win_close, &vars);
 	// === set loop;
-//	mlx_loop(var.mlx); 
+	mlx_loop(var.mlx); 
 	// usaged
 	// teest :HACK:
 	printf("\n______\n");

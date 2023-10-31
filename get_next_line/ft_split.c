@@ -11,7 +11,9 @@
 /* ************************************************************************** */
 
 #include "get_next_line.h"
-
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <unistd.h>
 static size_t	num_genr(char const *s, char c, int indc, int line)
 {
 	size_t	count;
@@ -94,15 +96,16 @@ char	**ft_split(char const *s, char c)
 	}
 	return (ptr_result);
 }
-//int main() {
-//  char *s = "s";
-//  char  *j = cup_noodle_malloc(s,' ',1);
-//  printf("--%s--\n", j);
+// int main() {
+//   char *s = "asdf jkl   ";
+//   char  *j = cup_noodle_malloc(s,' ',1);
+//   printf("--%s--\n", j);
 //
-//  char **real = ft_split(s, ' ');
-//  printf("-%s-", real[0]);
-//  printf("%p\n", real[1]);
-//  free_time(real, s, ' ', 1);
-//  printf("%lu", num_genr(s, ' ', -1, -1));
-//  free(j);
-//}
+//   char **real = ft_split(s, ' ');
+//   printf("-%s-", real[0]);
+//   printf("%p\n", real[1]);
+//   printf("%p\n", real[2]);
+//   free_time(real, s, ' ', 1);
+//   printf("%lu", num_genr(s, ' ', -1, -1));
+//   free(j);
+// }
