@@ -41,6 +41,20 @@ typedef struct s_node
 // 	return (0);
 // }
 
+int	check_valid_hex(char *s)
+{
+	int	i;
+
+	i = 0;
+	if (*s == '\n')
+		return (0);
+	while (s[i] && ((s[i] >= '0' && s[i] <= '9') || (s[i] >= 'a' && s[i] <= 'f')
+		|| (s[i] >= 'A' && s[i] <= 'F') || s[i] == '\n'))
+		i++;
+	if (!s[i] || s[i] == ' ')
+		return (i);
+	return (0);
+}
 
 int	check_valid_input(char *s)
 {
@@ -48,13 +62,17 @@ int	check_valid_input(char *s)
 	{
 		if (*s == ' ' || (*s >= '0' && *s <= '9') || *s == '\n')
 			s++;
-		else if (*s == '-')
+		else if (*s == '-' && s[1] && (s[1] >= '0' && s[1] <= '9'))
+			s++;
+		else if (*s == ',' && s[1] && s[1] == '0' && s[2] && s[2] == 'x' && s[3])
 		{
-			if (s[1] && (s[1] >= '0' && s[1] <= '9'))
-				s++;
-			else
-				break;
+			if (check_valid_hex(s + 3))
+				s = s + 3 + (check_valid_hex(s + 3));
+			else	
+				return (0);
 		}
+		else if (*s == '0' && s[1] && s[1] == 'x' && s[2])
+			s += 2;
 		else
 			break;
 	}
@@ -87,10 +105,32 @@ void	ft_new_list_add_back(int **content, t_node **node)
 	temp->next = ft_new_list(content);
 }
 
+int	valid_color(char *s)
+{
+	if (*s && s[1] && *s == '0' && s[1] == 'x')
+		s += 2;
+	else
+		return (0);
+	while (*s)
+	{
+		if (*s >= '0' && *s <= '9')
+			s++;
+		else if (*s >= 'a' && *s <= 'f')
+			s++;
+		else if (*s >= 'A' && *s <= 'F')
+			s++;
+		else
+			return (0);
+	}
+	if (*s == 'x')
+		return (0);
+	return (1);
+}
 int	ft_make_map(char **arr, t_node **node)
 {
 	int	i;
 	int	j;
+	int	k;
 	int	max;
 	int	**num_arr;
 
@@ -107,8 +147,25 @@ int	ft_make_map(char **arr, t_node **node)
 		// 	printf("hello bith\n");
 		// 	return (0);
 		// }
-		num_arr[j] = (int *)malloc(sizeof(int));
+		num_arr[j] = (int *)malloc(sizeof(int) * 2);
 		num_arr[j][0] = ft_atoi(arr[j]);
+		k = 0;
+		while(arr[j][k])
+		{
+			if (arr[j][k] == ',' && arr[j][k + 1] && arr[j][k + 2]
+				&& arr[j][k + 3] && arr[j][k + 3] != '\n' && arr[j][k + 3] != ' ')
+			{
+				if (!valid_color(&arr[j][k + 1]))
+					num_arr[j][1] = 0xFF0000;
+				else
+					num_arr[j][1] = ft_atoi_hex(&arr[j][k + 1]);
+				printf("%i\n", num_arr[j][1]);
+				break;
+			}
+			k++;
+		}
+		if (!arr[j][k])
+			num_arr[j][1] = 0xFF;
 		printf("==%i==\n", num_arr[j][0]);
 		j++;
 	}
@@ -126,13 +183,12 @@ int	ft_make_map(char **arr, t_node **node)
 	free(arr[i]);
 	free(arr);
 	//
-	
 	return (j);
 }
 
 void	add_init(t_img **img, int row, int col)
 {
-	(*img)->row = row + 1;
+	(*img)->row = row;
 	(*img)->col = col;
 }
 
@@ -149,12 +205,17 @@ int	get_input(char *s, t_node **head, t_img *img, int fd)
 	count = 0;
 	while (1)
 	{
+		printf("start_makemap\n");
 		temp = get_next_line(fd);
 		if (!temp)
 			break;
 		if (!check_valid_input(temp))
+		{
+			printf("input_not_valid");
 			return (0); // need to free :TODO:
+		}	// 
 		num = ft_make_map(ft_split(temp, ' '), head);
+		printf("fin_makemap\n");
 		if (checker == 0)
 			checker = num;
 		if (num != checker)
@@ -173,23 +234,23 @@ int	get_input(char *s, t_node **head, t_img *img, int fd)
 
 // calc init_point :BUG:
 
-// void	calc_init_draw(t_img *img)
-// {
-// 	int	box_size;
-// 	int	temp;
-//
-// 	box_size = 1;
-// 	while (600 > (img->col + img->row) * (double)box_size / 2)
-// 		box_size++;
-// 	box_size -= 2;
-// 	img->box_size = box_size;
-// 	img->init_x = 800 + (int)(img->col * ((double)box_size / 2) * sqrt(3) - img->row * ((double)box_size/2) * sqrt(3));
-// 	img->init_y = 300;
-// 	printf("%i\n" ,img->init_x);
-// 	printf("%i\n" ,img->row);
-// 	printf("%i\n" ,img->col);
-// 	printf("%i\n" ,img->box_size);
-// }
+void	calc_init_draw(t_img *img)
+{
+	int	box_size;
+	int	temp;
+
+	box_size = 1;
+	while (700 > (img->col + img->row - 2) * box_size)
+		box_size++;
+	img->box_size = box_size; // :TODO: can use fix point
+	img->init_x = 840 + (int)((img->col * img->box_size * sqrt(3) - (img->row * img->box_size * sqrt(3))) / 2);
+	img->init_y = 250;
+	printf("x = %i\n" ,img->init_x);
+	printf("y = %i\n" ,img->init_y);
+	printf("row = %i\n" ,img->row);
+	printf("col = %i\n" ,img->col);
+	printf("box_size = %i\n" ,img->box_size);
+}
 //
 // // for put
  void	my_mlx_pixel_put(t_img *data, int x, int y, int color)
@@ -201,115 +262,143 @@ int	get_input(char *s, t_node **head, t_img *img, int fd)
 }
 
 // for drawing :BUG:
-// typedef	struct s_arg
-// {
-// 	int	row;
-// 	int	col;
-// }	t_arg;
-//
-// typedef	struct	s_data
-// {
-// 	int	row;
-// 	int	col;
-// 	int	start_x;
-// 	int	start_y;
-// 	int	end_x;
-// 	int	end_y;
-// }				t_data;
-//
-// t_data	calc_pos(t_arg curr, t_img *img, int prev_dent, int dent)
-// {
-// 	t_data	res;
-// 	double diff_x;
-// 	double diff_y;
-//
-// 	diff_x = ((double)img->box_size / 2) * sqrt(3);
-// 	diff_y = (double)img->box_size / 2;
-// 	res.col = curr.col;
-// 	res.row = curr.row;
-// 	res.end_x = img->init_x + (curr.row * diff_x) - curr.col * diff_x;
-// 	res.start_x = img->init_x + ((curr.row + 1) * diff_x) - curr.col * diff_x;
-// 	res.end_y = img->init_y + (curr.row + curr.col + dent) * diff_y;
-// 	res.start_y = img->init_y + (curr.row + curr.col + prev_dent - 1) * diff_y;
-// 	printf("___%i \n %i\n ___\n",res.end_x, res.end_y );
-// 	return (res);
-// }
-//
-// #define FIXED_SCALE 16
-//
-// typedef	struct	s_calc
-// {
-// 	int	dif_x;
-// 	int	dif_y;
-// 	int	steps;
-// 	int	x_inc;
-// 	int	y_inc;
-// }				t_calc;
-//
-// void	draw_point_to_point(t_img **img, t_data curr)
-// {
-// 	int		i;
-// 	t_calc	c;
-// 	int		x;
-// 	int		y;
-//
-// 	c.dif_x = (curr.end_x - curr.start_x) << FIXED_SCALE;
-// 	c.dif_y = (curr.end_y - curr.start_y) << FIXED_SCALE;
-//     if (abs(c.dif_x) > abs(c.dif_y))
-//         c.steps = abs(c.dif_x >> FIXED_SCALE);
-//     else
-//         c.steps = abs(c.dif_y >> FIXED_SCALE);
-//     c.x_inc = c.dif_x / c.steps;
-//     c.y_inc = c.dif_y / c.steps;
-//     x = curr.start_x << FIXED_SCALE;
-//     y = curr.start_y << FIXED_SCALE;
-//     my_mlx_pixel_put(*img,  x >> FIXED_SCALE, y >> FIXED_SCALE, 0xFF0000); // Convert back to integer
-// 	i = 0;
-// 	while(i < c.steps)
-// 	{
-//         x += c.x_inc;
-//         y += c.y_inc;
-//         my_mlx_pixel_put(*img, x >> FIXED_SCALE, y >> FIXED_SCALE, 0xFF0000); // Convert back to integer
-// 		i++;
-//     }
-// }
-//
-// void	draw_from_prev_row(t_img **img, int **curr_set,int **prev_set ,int current_col)
-// {
-// 	int	i = 0;
-// 	while (prev_set[i])
-// 	{
-// 		draw_point_to_point(img, calc_pos((t_arg){i, current_col},*img, prev_set[i][0], curr_set[i][0]));
-// 		i++;
-// 	}
-// }
-//
-// void	draw_map_to_img(t_node *head,t_img *img)
-// {
-// 	int	i;
-// 	int	j;
-// 	int	prev;
-// 	int	**previous_set;
-//
-// 	previous_set = NULL;
-// 	j = 0;
-// 	while (head)
-// 	{
-// 		i = 0;
-// 		while (head->num_arr[i])
-// 		{
-// 			if (i)
-// 				draw_point_to_point(&img, calc_pos((t_arg){i, j}, img, prev, head->num_arr[i][0]));
-// 			prev = head->num_arr[i][0];
-// 			i++;
-// 		}
-// 		if (previous_set)
-// 			draw_from_prev_row(&img, head->num_arr, previous_set, j);
-// 		previous_set = head->num_arr;
-// 		head = head -> next;
-// 		j++;
-// 	}
-// }
+typedef	struct s_arg
+{
+	int	row;
+	int	col;
+}	t_arg;
+
+typedef	struct	s_data
+{
+	int	row;
+	int	col;
+	int	start_x;
+	int	start_y;
+	int	start_color;
+	int	end_x;
+	int	end_y;
+	int	end_color;
+}				t_data;
+
+t_data	calc_pos(t_arg curr, t_img *img, int *prev_dent, int *dent)
+{
+	t_data	res;
+	double	diff_x;
+	int	diff_y;
+
+	printf("\nrow == %i \ncol == %i",curr.row, curr.col);
+	diff_x = img->box_size * sqrt(3);
+	diff_y = img->box_size;
+	res.row = curr.row;
+	res.col = curr.col;
+	res.end_x = img->init_x + (curr.row * diff_x) - (curr.col * diff_x);
+	res.start_x = img->init_x + (curr.row - 1) * diff_x - curr.col * diff_x;
+	res.end_y = img->init_y + (curr.row + curr.col - (double)dent[0] / 3) * diff_y;
+	res.start_y = img->init_y + ((curr.row - 1) + curr.col - (double)prev_dent[0] / 3) * diff_y;
+	res.start_color = prev_dent[1];
+	res.end_color = dent[1];
+	printf("\nstart_x == %i \n start_y == %i\n",res.start_x, res.start_y );
+	printf("end_x == %i \n end_y == %i\n",res.end_x, res.end_y );
+	return (res);
+}
+
+#define FIXED_SCALE 16
+
+typedef	struct	s_calc
+{
+	int	dif_x;
+	int	dif_y;
+	int	steps;
+	int	x_inc;
+	int	y_inc;
+}				t_calc;
+
+void	draw_point_to_point(t_img **img, t_data curr)
+{
+	int		i;
+	t_calc	c;
+	int		x;
+	int		y;
+
+	c.dif_x = (curr.end_x - curr.start_x) << FIXED_SCALE;
+	c.dif_y = (curr.end_y - curr.start_y) << FIXED_SCALE;
+    if (abs(c.dif_x) > abs(c.dif_y))
+        c.steps = abs(c.dif_x >> FIXED_SCALE);
+    else
+        c.steps = abs(c.dif_y >> FIXED_SCALE);
+    c.x_inc = c.dif_x / c.steps;
+    c.y_inc = c.dif_y / c.steps;
+    x = curr.start_x << FIXED_SCALE;
+    y = curr.start_y << FIXED_SCALE;
+    my_mlx_pixel_put(*img,  x >> FIXED_SCALE, y >> FIXED_SCALE, curr.start_color); // Convert back to integer
+	i = 0;
+	while(i < c.steps)
+	{
+        x += c.x_inc;
+        y += c.y_inc;
+        my_mlx_pixel_put(*img, x >> FIXED_SCALE, y >> FIXED_SCALE, curr.end_color); // Convert back to integer
+		i++;
+    }
+}
+
+t_data	calc_pos_col(t_arg curr, t_img *img, int *prev_dent, int *dent)
+{
+	t_data	res;
+	double	diff_x;
+	int	diff_y;
+
+	printf("\nrow == %i \ncol == %i",curr.row, curr.col);
+	diff_x = img->box_size * sqrt(3);
+	diff_y = img->box_size;
+	res.row = curr.row;
+	res.col = curr.col;
+	res.start_x = img->init_x + (curr.row) * diff_x - curr.col * diff_x;
+	res.end_x = img->init_x + ((curr.row + 1) * diff_x) - (curr.col * diff_x);
+	res.start_y = img->init_y + ((curr.row) + curr.col ) * diff_y - ((double)dent[0] / 3) * diff_y;
+	res.end_y = img->init_y + (curr.row + (curr.col - 1) - (double)prev_dent[0] / 3) * diff_y;
+	res.start_color = dent[1];
+	res.end_color = prev_dent[1];
+	printf("\nstart_x == %i \n start_y == %i\n",res.start_x, res.start_y );
+	printf("end_x == %i \n end_y == %i\n",res.end_x, res.end_y );
+	return (res);
+}
+void	draw_from_prev_row(t_img **img, int **curr_set,int **prev_set ,int current_col)
+{
+	int	i = 0;
+	while (prev_set[i])
+	{
+		draw_point_to_point(img, calc_pos_col((t_arg){i, current_col},*img, prev_set[i], curr_set[i]));
+		i++;
+	}
+}
+
+void	draw_map_to_img(t_node *head,t_img *img)
+{
+	int	i;
+	int	j;
+	int	*prev;
+	int	**previous_set;
+
+	previous_set = NULL;
+	j = 0;
+	while (head)
+	{
+		i = 0;
+		while (head->num_arr[i])
+		{
+			printf("\ndrawto_x:\n");
+			if (i != 0)
+				draw_point_to_point(&img, calc_pos((t_arg){i, j}, img, prev, head->num_arr[i]));
+			prev = head->num_arr[i];
+			i++;
+		}
+		if (previous_set != NULL)
+			draw_from_prev_row(&img, head->num_arr, previous_set, j);
+		previous_set = head->num_arr;
+		head = head -> next;
+		j++;
+	}
+}
 //  ======================================
 
 
@@ -358,6 +447,24 @@ void	draw_c(t_img *img)
 {
 	draw_d(&img);
 }
+
+void	draw_background(t_img *img, int x, int y, int color)
+{
+	int	i;
+	int	j;
+
+	i = 0;
+	while (i != y)
+	{
+		j = 0;
+		while (j != x)
+		{
+			my_mlx_pixel_put(img, j, i, color);
+			j++;
+		}
+		i++;
+	}
+}
 // win : 1600 - 1000
 // half : 800 - 500
 // usaged : width  while box_size < 600 
@@ -374,27 +481,30 @@ int	main(int ac, char *av[])
 	//	return (0);
 	if (!get_input(av[1], &map, &img, open(av[1], O_RDONLY)))
 		return (2);
+	printf("pass_get_input");
 	// === start mlx and img.img
 	// default setup ::	
-	// var.mlx = mlx_init();
-	// var.win = mlx_new_window(var.mlx, 1640, 1080, "fdf"); // max 1680, 1020
-	// img.img = mlx_new_image(var.mlx, 1630, 1070);
-	// img.addr = mlx_get_data_addr(img.img, &img.bits_per_pixel, &img.line_length,
-	// 							 &img.endian);
+	var.mlx = mlx_init();
+	var.win = mlx_new_window(var.mlx, 1680, 1020, "fdf"); // max 1680, 1020
+	img.img = mlx_new_image(var.mlx, 1680, 1020);
+	img.addr = mlx_get_data_addr(img.img, &img.bits_per_pixel, &img.line_length,
+								 &img.endian);
 	// debugg :BUG:
 //	draw_c(&img);
 	
 	// === calculate init x and init y;
-	//calc_init_draw(&img);	
+	calc_init_draw(&img);	
+	// === draw background
+//	draw_background(&img, 1640, 1080, 0xffffff);
 	// === drawing to img.img
-	//	draw_map_to_img(map, &img);
+	draw_map_to_img(map, &img);
 	// === put drawing to win
-//	mlx_put_image_to_window(var.mlx, var.win, img.img, 0, 0);
+	mlx_put_image_to_window(var.mlx, var.win, img.img, 0, 0);
 	
 	// === set hook :TODO:
-	//mlx_hook(var.win, 2, 0, win_close, &vars);
+	// mlx_hook(var.win, 2, 0, win_close, &vars);
 	// === set loop;
-//	mlx_loop(var.mlx); 
+	mlx_loop(var.mlx);
 	// usaged
 	// teest :HACK:
 	printf("\n%d", map->num_arr[0][0]);

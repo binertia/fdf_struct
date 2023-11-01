@@ -31,4 +31,5 @@ size_t	ft_strlen(const char *str);
 
 char	**ft_split(char const *s, char c);
 int		ft_atoi(char const *s);
+int		ft_atoi_hex(char const *s);
 #endif

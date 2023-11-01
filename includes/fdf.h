@@ -11,5 +11,6 @@
 char	*get_next_line(int fd);
 char	**ft_split(char const *s, char c);
 int		ft_atoi(char const *s);
+int		ft_atoi_hex(char const *s);
 
 #endif
