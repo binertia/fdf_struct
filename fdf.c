@@ -99,20 +99,21 @@ int	ft_make_map(char **arr, t_node **node)
 	j = 0;
 	while (arr[i])
 		i++;
-	i--;
-	num_arr = (int **)malloc(sizeof(int *) * (i));
-	while (i >= j)
+	num_arr = (int **)malloc(sizeof(int *) * (i + 1));
+	while (i > j)
 	{
-		if (arr[i][0] == 0)
-		{
-			printf("hello bith\n");
-			return (0);
-		}
+		// if (arr[i][0] == 0)
+		// {
+		// 	printf("hello bith\n");
+		// 	return (0);
+		// }
 		num_arr[j] = (int *)malloc(sizeof(int));
 		num_arr[j][0] = ft_atoi(arr[j]);
 		printf("==%i==\n", num_arr[j][0]);
 		j++;
 	}
+	num_arr[j] = NULL;
+	printf("j == %i\n", j);
 	ft_new_list_add_back(num_arr, node);
 
 	//:HACK:free logic
@@ -122,10 +123,11 @@ int	ft_make_map(char **arr, t_node **node)
 		free(arr[i]);
 		i++;
 	}
+	free(arr[i]);
 	free(arr);
 	//
 	
-	return (j - 1);
+	return (j);
 }
 
 void	add_init(t_img **img, int row, int col)
@@ -374,11 +376,11 @@ int	main(int ac, char *av[])
 		return (2);
 	// === start mlx and img.img
 	// default setup ::	
-	var.mlx = mlx_init();
-	var.win = mlx_new_window(var.mlx, 1640, 1080, "fdf"); // max 1680, 1020
-	img.img = mlx_new_image(var.mlx, 1630, 1070);
-	img.addr = mlx_get_data_addr(img.img, &img.bits_per_pixel, &img.line_length,
-								 &img.endian);
+	// var.mlx = mlx_init();
+	// var.win = mlx_new_window(var.mlx, 1640, 1080, "fdf"); // max 1680, 1020
+	// img.img = mlx_new_image(var.mlx, 1630, 1070);
+	// img.addr = mlx_get_data_addr(img.img, &img.bits_per_pixel, &img.line_length,
+	// 							 &img.endian);
 	// debugg :BUG:
 //	draw_c(&img);
 	
@@ -395,6 +397,7 @@ int	main(int ac, char *av[])
 //	mlx_loop(var.mlx); 
 	// usaged
 	// teest :HACK:
+	printf("\n%d", map->num_arr[0][0]);
 	printf("\n______\n");
 	t_node *temp = map;
 	int	i;
@@ -421,6 +424,7 @@ int	main(int ac, char *av[])
 			free(free_time->num_arr[i]);
 			i++;
 		}
+		free(free_time->num_arr[i]);
 		free(free_time->num_arr);
 		free(free_time);
 		free_time = NULL;
