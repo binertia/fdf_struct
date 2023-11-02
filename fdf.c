@@ -143,7 +143,7 @@ int	ft_make_map(char **arr, t_node **node)
 		// }
 		num_arr[j] = (int *)malloc(sizeof(int) * 2);
 		num_arr[j][0] = ft_atoi(arr[j]);
-		if (num_arr[j][0] >= 79 || num_arr[j][0] <= -78)
+		if (num_arr[j][0] >= 70 || num_arr[j][0] <= -70)
 			return (-1); // handle too much dent
 		k = 0;
 		while(arr[j][k])
@@ -202,7 +202,7 @@ int	get_input(char *s, t_node **head, t_img *img, int fd)
 	while (1)
 	{
 		temp = get_next_line(fd);
-		if (!temp)
+		if (!temp || *temp == '\n')
 			break;
 		if (!check_valid_input(temp))
 		{
@@ -267,7 +267,7 @@ typedef	struct	s_data
 	int	end_color;
 }				t_data;
 
-t_data	calc_pos(t_arg curr, t_img *img, int *prev_dent, int *dent)
+t_data	calc_pos(t_arg curr, t_img *img, int *prev_dent, int *dent) //:TODO:
 {
 	t_data	res;
 	double	diff_x;
@@ -277,29 +277,31 @@ t_data	calc_pos(t_arg curr, t_img *img, int *prev_dent, int *dent)
 		res.start_color = prev_dent[1];
 	else if (prev_dent[0] >= 0)
 	{
-		res.start_color = 0xFFFFFF - (abs(prev_dent[0]) * 8 * 0x202);
-		if (res.start_color < 0xFF0000)
-			res.start_color = 0xFF0000;
+		res.start_color = 0xFFFF + (prev_dent[0] * 0x110000);
+		if (prev_dent[0] >= 15)
+			res.start_color = 0xFFFFFF;
 	}
 	else
 	{
-		res.start_color = 0xFFFFFF - (abs(prev_dent[0]) * 8 * 0x20200);
-		if (res.start_color < 0x0000FF)
-			res.start_color = 0x0000FF;
+		res.start_color = 0xFFFF - (abs(prev_dent[0]) * 0x1100);
+		if (prev_dent[0] <= -15)
+			res.start_color = 0xFF;
 	}
 	if (dent[1] != 0)
 		res.end_color = dent[1];
-	else if (prev_dent[0] >= 0)
+	else if (dent[0] >= 0)
 	{
-		res.end_color = 0xFFFFFF - (abs(dent[0]) * 8 * 0x202);
-		if (res.end_color < 0xFF0000)
-			res.end_color = 0xFF0000;
+		if (dent[0] >= 15)
+			res.end_color = 0xFFFFFF;
+		else
+			res.end_color = 0xFFFF + (dent[0] * 0x110000);
 	}
 	else
 	{
-		res.end_color = 0xFFFFFF - (abs(dent[0]) * 8 * 0x20200);
-		if (res.end_color < 0x0000FF)
-			res.end_color = 0x0000FF;
+		if (dent[0] <= -15)
+			res.end_color = 0xFF;
+		else
+			res.end_color = 0xFFFF - (abs(dent[0]) * 0x1100);
 	}
 	printf("\nrow == %i \ncol == %i",curr.row, curr.col);
 	diff_x = img->box_size * sqrt(3);
@@ -334,7 +336,7 @@ void	draw_point_to_point(t_img **img, t_data curr)
 	t_calc	c;
 	int		x;
 	int		y;
-	double	color;
+	int		color;
 
 	c.dif_x = (curr.end_x - curr.start_x) << FIXED_SCALE;
 	c.dif_y = (curr.end_y - curr.start_y) << FIXED_SCALE;
@@ -348,15 +350,27 @@ void	draw_point_to_point(t_img **img, t_data curr)
     y = curr.start_y << FIXED_SCALE;
     my_mlx_pixel_put(*img,  x >> FIXED_SCALE, y >> FIXED_SCALE, curr.start_color);
 	i = 0;
-	color = 0;
 	while(i < c.steps)
 	{
+		if (curr.start_color < curr.end_color)
+		{
+			if (curr.start_color < 0xFFFF && curr.start_color >= 0xFF)
+				curr.start_color += 0x100;
+			else if (curr.start_color <= 0xFEFFFF && curr.start_color >= 0xFFFF)
+				curr.start_color += 0x10000 ;
+			// if (curr.start_color > (0xFFFF - 0x100 * color) && curr.start_color < 0xFFFF)
+			// 	curr.start_color = 0xFFFF;
+		}
+		else if (curr.start_color > curr.end_color)
+		{
+			if (curr.start_color <= 0xFFFF && curr.start_color >= 0x1FF)
+				curr.start_color -= 0x100;
+			else if (curr.start_color <= 0xFFFFFF  && curr.start_color >= 0x1FFFF)
+				curr.start_color -= 0x10000;
+		}
         x += c.x_inc;
         y += c.y_inc;
-		if (curr.end_color > curr.start_color)
 			my_mlx_pixel_put(*img, x >> FIXED_SCALE, y >> FIXED_SCALE, curr.start_color);
-		else
-			my_mlx_pixel_put(*img, x >> FIXED_SCALE, y >> FIXED_SCALE, curr.end_color);
 		i++;
     }
 }
@@ -367,36 +381,39 @@ t_data	calc_pos_col(t_arg curr, t_img *img, int *prev_dent, int *dent)
 	double	diff_x;
 	int	diff_y;
 
-	if (prev_dent[1] != 0)
-		res.start_color = dent[1];
-	else if (prev_dent[0] >= 0)
+
+	if (dent[1] != 0)
+		res.start_color = prev_dent[1];
+	else if (dent[0] >= 0)
 	{
-		res.start_color = 0xFFFFFF - (abs(dent[0]) * 8 * 0x202);
-		if (res.start_color < 0xFF0000)
-			res.start_color = 0xFF0000;
+		res.start_color = 0xFFFF + (prev_dent[0] * 0x110000);
+		if (dent[0] >= 15)
+			res.start_color = 0xFFFFFF;
 	}
 	else
 	{
-		res.start_color = 0xFFFFFF - (abs(dent[0]) * 8 * 0x20200);
-		if (res.start_color < 0x0000FF)
-			res.start_color = 0x0000FF;
-
+		res.start_color = 0xFFFF - (abs(dent[0]) * 0x1100);
+		if (dent[0] <= -15)
+			res.start_color = 0xFF;
 	}
-	if (dent[1] != 0)
+	if (prev_dent[1] != 0)
 		res.end_color = prev_dent[1];
 	else if (prev_dent[0] >= 0)
 	{
-		res.end_color = 0xFFFFFF - (abs(prev_dent[0]) * 8 * 0x202);
-		if (res.end_color < 0xFF0000)
-			res.end_color = 0xFF0000;
+		if (prev_dent[0] >= 15)
+			res.end_color = 0xFFFFFF;
+		else
+			res.end_color = 0xFFFF + (prev_dent[0] * 0x110000);
 	}
 	else
 	{
-		res.end_color = 0xFFFFFF - (abs(dent[0]) * 8 * 0x20200);
-		if (res.end_color < 0x0000FF)
-			res.end_color = 0x0000FF;
-
+		if (prev_dent[0] <= -15)
+			res.end_color = 0xFF;
+		else
+			res.end_color = 0xFFFF - (abs(prev_dent[0]) * 0x1100);
 	}
+//
+		//
 	printf("\nrow == %i \ncol == %i",curr.row, curr.col);
 	diff_x = img->box_size * sqrt(3);
 	diff_y = img->box_size;
@@ -410,6 +427,7 @@ t_data	calc_pos_col(t_arg curr, t_img *img, int *prev_dent, int *dent)
 	//res.end_color = prev_dent[1];
 	printf("\nstart_x == %i \n start_y == %i\n",res.start_x, res.start_y );
 	printf("end_x == %i \n end_y == %i\n",res.end_x, res.end_y );
+	//:TODO: need to handle exit when number is negative;
 	return (res);
 }
 
@@ -470,6 +488,16 @@ void	draw_background(t_img *img, int x, int y, int color)
 			j++;
 		}
 		i++;
+		if (i % 8 == 0)
+		{
+		if (color % 0x100 > 0x11)
+			color--;
+		if (color % 0x10000 > 0x1111)
+			color -= 0x100;
+		if (color <= 0xff0000 && color > 0x111111)
+			color-= 0x10000;
+		}
+		// 0x49557a
 	}
 }
 
@@ -498,7 +526,7 @@ int	main(int ac, char *av[])
 	// === calculate init x and init y;
 	calc_init_draw(&img);	
 	// === draw background
-	draw_background(&img, 1680, 1020, 0x49557a);
+	draw_background(&img, 1680, 1020, 0x7C81AD);
 	// === drawing to img.img
 	draw_map_to_img(map, &img);
 	// === put drawing to win
