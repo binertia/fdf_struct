@@ -31,6 +31,10 @@ typedef struct s_var
 typedef struct s_node
 {
 	int **num_arr;
+	int	max;
+	int	min;
+	int	max_col;
+	int	min_col;
 	struct s_node	*next;
 }	t_node;
 
@@ -120,7 +124,7 @@ int	valid_color(char *s)
 	return (1);
 }
 
-int	ft_make_map(char **arr, t_node **node)
+int	ft_make_map(char **arr, t_node **node, t_node **ref)
 {
 	int	i;
 	int	j;
@@ -131,6 +135,8 @@ int	ft_make_map(char **arr, t_node **node)
 	printf("ft_make_map\n");
 	i = 0;
 	j = 0;
+	(*ref)->min = 322;
+	(*ref)->max = -322;
 	while (arr[i])
 		i++;
 	num_arr = (int **)malloc(sizeof(int *) * (i + 1));
@@ -143,6 +149,16 @@ int	ft_make_map(char **arr, t_node **node)
 		// }
 		num_arr[j] = (int *)malloc(sizeof(int) * 2);
 		num_arr[j][0] = ft_atoi(arr[j]);
+		if (num_arr[j][0] - j> (*ref)->max)
+		{
+			(*ref)->max = num_arr[j][0] - j;
+			(*ref)->max_col = j;
+		}
+		if (num_arr[j][0] < (*ref)->min)
+		{
+			(*ref)->min = num_arr[j][0] - j;
+			(*ref)->min_col = j;
+		}
 		if (num_arr[j][0] >= 70 || num_arr[j][0] <= -70)
 			return (-1); // handle too much dent
 		k = 0;
@@ -161,7 +177,7 @@ int	ft_make_map(char **arr, t_node **node)
 			k++;
 		}
 		if (!arr[j][k])
-			num_arr[j][1] = 0;
+			num_arr[j][1] = 0x0;
 		printf("==%i==\n", num_arr[j][0]);
 		j++;
 	}
@@ -188,7 +204,7 @@ void	add_init(t_img **img, int row, int col)
 	(*img)->col = col;
 }
 
-int	get_input(char *s, t_node **head, t_img *img, int fd)
+int	get_input(char *s, t_node **head, t_img *img, int fd, t_node *ref)
 {
 	int		checker;
 	int		num;
@@ -209,7 +225,7 @@ int	get_input(char *s, t_node **head, t_img *img, int fd)
 			printf("input_not_valid");
 			return (0); // need to free :TODO:
 		}	// 
-		num = ft_make_map(ft_split(temp, ' '), head);
+		num = ft_make_map(ft_split(temp, ' '), head, &ref);
 		free(temp);
 		count++;
 	}
@@ -221,17 +237,28 @@ int	get_input(char *s, t_node **head, t_img *img, int fd)
 
 // calc init_point :BUG:
 
-void	calc_init_draw(t_img *img)
+void	calc_init_draw(t_img *img, t_node *ref)
 {
 	int	box_size;
 	int	temp;
+	int	range_max;
+	int	range_min;
 
+	range_max = (((ref->max + ref->max_col) / 3) - ref->max_col) ;
+	range_min = ((abs)(ref->min + ref->min_col) / 3) - (img->col - ref->min_col);
+	if (range_max < 0)
+		range_max = 0;
+	if (range_min < 0)
+		range_min = 0;
 	box_size = 1;
-	while (650 > (img->col + img->row - 2) * box_size)
+	while (700 > (img->col + img->row + range_max + range_min - 2 ) * box_size)
 		box_size++;
+	if (box_size > 1)
+		box_size--;
+	range_max = (range_min + range_max) * box_size;
 	img->box_size = box_size;
 	img->init_x = 840 + (int)((img->col * img->box_size * sqrt(3) - (img->row * img->box_size * sqrt(3))) / 2);
-	img->init_y = 251;
+	img->init_y = 1000 - ((img->col + img->row - 2) * box_size + range_max);
 	printf("x = %i\n" ,img->init_x);
 	printf("y = %i\n" ,img->init_y);
 	printf("row = %i\n" ,img->row);
@@ -239,7 +266,7 @@ void	calc_init_draw(t_img *img)
 	printf("box_size = %i\n" ,img->box_size);
 }
 
-// // for put
+// // for putr
  void	my_mlx_pixel_put(t_img *data, int x, int y, int color)
 {
 	char *dst;
@@ -338,6 +365,8 @@ void	draw_point_to_point(t_img **img, t_data curr)
 	int		y;
 	int		color;
 
+	if (curr.start_y < 0 || curr.end_y < 0)
+		exit(2);
 	c.dif_x = (curr.end_x - curr.start_x) << FIXED_SCALE;
 	c.dif_y = (curr.end_y - curr.start_y) << FIXED_SCALE;
     if (abs(c.dif_x) > abs(c.dif_y))
@@ -383,10 +412,10 @@ t_data	calc_pos_col(t_arg curr, t_img *img, int *prev_dent, int *dent)
 
 
 	if (dent[1] != 0)
-		res.start_color = prev_dent[1];
+		res.start_color = dent[1];
 	else if (dent[0] >= 0)
 	{
-		res.start_color = 0xFFFF + (prev_dent[0] * 0x110000);
+		res.start_color = 0xFFFF + (dent[0] * 0x110000);
 		if (dent[0] >= 15)
 			res.start_color = 0xFFFFFF;
 	}
@@ -501,30 +530,40 @@ void	draw_background(t_img *img, int x, int y, int color)
 	}
 }
 
+//================================================
+//hook
+int win_close(int keycode, t_var *vars)
+{
+	if (keycode == 53)
+		mlx_destroy_window(vars->mlx, vars->win);
+	return (0);
+}
+
 int	main(int ac, char *av[])
 {
 	t_img img;
 	t_var var;
 	t_node *map;
+	t_node ref;
 
 	map = NULL;
 	if (ac != 2)
 		return (0);
 	//if (!get_input(av[1]))
 	//	return (0);
-	if (!get_input(av[1], &map, &img, open(av[1], O_RDONLY)))
+	if (!get_input(av[1], &map, &img, open(av[1], O_RDONLY ), &ref))
 		return (2);
 	printf("pass_get_input");
 	// === start mlx and img.img
 	// default setup ::	
 	var.mlx = mlx_init();
-	var.win = mlx_new_window(var.mlx, 1680, 1020, "fdf"); // max 1680, 1020
-	img.img = mlx_new_image(var.mlx, 1680, 1020);
+	var.win = mlx_new_window(var.mlx, 1980, 1020, "fdf"); // max 1680, 1020
+	img.img = mlx_new_image(var.mlx, 1980, 1020);
 	img.addr = mlx_get_data_addr(img.img, &img.bits_per_pixel, &img.line_length,
 								 &img.endian);
 
 	// === calculate init x and init y;
-	calc_init_draw(&img);	
+	calc_init_draw(&img, &ref);	
 	// === draw background
 	draw_background(&img, 1680, 1020, 0x7C81AD);
 	// === drawing to img.img
@@ -533,7 +572,7 @@ int	main(int ac, char *av[])
 	mlx_put_image_to_window(var.mlx, var.win, img.img, 0, 0);
 	
 	// === set hook :TODO:
-	// mlx_hook(var.win, 2, 0, win_close, &vars);
+	 mlx_hook(var.win, 2, 0, win_close, &var);
 	// === set loop;
 	mlx_loop(var.mlx);
 	// usaged
