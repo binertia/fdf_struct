@@ -3,6 +3,7 @@
 #include <math.h>
 #include <sys/fcntl.h>
 
+//testttttt 
 // setup
 typedef struct s_img
 {
